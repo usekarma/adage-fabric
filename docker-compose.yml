@@ -1,0 +1,44 @@
+version: "3.8"
+
+services:
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.1.10
+    command:
+      - redpanda start
+      - --overprovisioned
+      - --smp=1
+      - --memory=1G
+      - --reserve-memory=0M
+      - --set redpanda.enable_rack_awareness=false
+      - --check=false
+    ports:
+      - "9092:9092"   # Kafka API
+      - "9644:9644"   # Admin API
+    environment:
+      - REDPANDA_AUTO_CREATE_TOPICS=true
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.7
+    ports:
+      - "9000:9000"   # native
+      - "8123:8123"   # HTTP
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    environment:
+      - CLICKHOUSE_DB=default
+      - CLICKHOUSE_USER=default
+      - CLICKHOUSE_PASSWORD=
+
+  grafana:
+    image: grafana/grafana:10.4.6
+    ports:
+      - "3000:3000"
+    environment:
+      # Install the official ClickHouse datasource plugin
+      - GF_INSTALL_PLUGINS=grafana-clickhouse-datasource
+    volumes:
+      - ./provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./dashboards:/var/lib/grafana/dashboards

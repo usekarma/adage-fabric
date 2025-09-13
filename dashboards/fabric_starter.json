@@ -1,0 +1,41 @@
+{
+  "title": "Fabric Starter",
+  "uid": "fabric-starter",
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Events per minute by ns",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 10 },
+      "datasource": { "type": "grafana-clickhouse-datasource", "uid": "ch_fabric" },
+      "options": { "legend": { "showLegend": true } },
+      "targets": [
+        {
+          "format": "time_series",
+          "queryType": "sql",
+          "rawSql": "SELECT t_min AS time, ns, sum(c) AS value FROM facts_events_minute WHERE t_min BETWEEN $__fromTime AND $__toTime GROUP BY t_min, ns ORDER BY t_min",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "custom": {} }, "overrides": [] }
+    },
+    {
+      "type": "table",
+      "title": "Recent parsed events",
+      "gridPos": { "x": 0, "y": 10, "w": 24, "h": 10 },
+      "datasource": { "type": "grafana-clickhouse-datasource", "uid": "ch_fabric" },
+      "targets": [
+        {
+          "format": "table",
+          "queryType": "sql",
+          "rawSql": "SELECT ts_ingest, ns, event_type, op, severity, status, event_id FROM parsed_mongodb ORDER BY ts_ingest DESC LIMIT 200",
+          "refId": "B"
+        }
+      ],
+      "options": { "showHeader": true }
+    }
+  ],
+  "time": { "from": "now-6h", "to": "now" }
+}
