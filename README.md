@@ -17,7 +17,7 @@ Fabric gives you:
 - **Observability:** Grafana dashboards on top of facts and views.
 - **ML-ready:** Expose stable views for downstream enrichment and modeling.
 
-## 🧩 Pattern
+## Pattern
 
 1. **Raw**  
    - Direct ingest from Kafka.  
@@ -36,7 +36,7 @@ Fabric gives you:
    - Join or union multiple sources, normalize dimensions.  
    - Used by Grafana & ML, not tied to any one tool.
 
-## 🚀 Quickstart (Demo on a laptop)
+## Quickstart (Demo on a laptop)
 
 ```bash
 git clone https://github.com/usekarma/adage-fabric.git
@@ -50,6 +50,8 @@ This starts:
 - **Grafana** on :3000 (admin/admin, with starter dashboards)
 
 Feed sample fixtures into Kafka and query in ClickHouse or view dashboards at http://localhost:3000.
+
+## Testing
 
 ### Run all test cases
 
@@ -92,7 +94,7 @@ Now future runs compare actuals against these snapshots—true unit-test behavio
 - **Late arrival:** older ts_event produced last (check it still lands in correct partitions/order).
 - **Noise fields:** extra keys in payload to verify your parser ignores unknowns.
 
-## 📂 Repo Structure
+## Repo Structure
 
 ```
 adage-fabric/
@@ -105,12 +107,12 @@ adage-fabric/
   docs/                      # Design notes, join strategy, fact templates
 ```
 
-## 📑 Documentation
+## Documentation
 
 - [docs/fact_template.md](docs/fact_template.md) — checklist for designing facts.  
 - [docs/join_strategy.md](docs/join_strategy.md) — where to join (CH, Grafana, ML).  
 
-## 🔮 Roadmap
+## Roadmap
 
 - [ ] Add sample source mappings (Mongo CDC, Jira, Splunk).  
 - [ ] Provide canonical dims (`service`, `ticket_id`, `env`).  
@@ -123,7 +125,7 @@ adage-fabric/
 - Parametrize the topic per case (adage.demo.${CASE}.v1) to avoid consumer-offset interference (or run ALTER TABLE kafka_mongodb_cdc MODIFY SETTING kafka_group_name='fabric_demo_$$RANDOM' before each case).
 - If you later add async enrichment, add expected CSVs for the enriched view too.
 
-## 📜 License
+## License
 
 Apache 2.0 — free to use, adapt, and extend.  
 Authored by [usekarma](https://github.com/usekarma).

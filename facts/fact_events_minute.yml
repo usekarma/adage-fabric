@@ -1,0 +1,53 @@
+fact:
+  name: fact_events_minute
+  purpose: Events per minute by namespace/event_type/op for live dashboards.
+  grain:
+    bucket: minute
+    keys: [ns, event_type, op]
+  inputs:
+    parsed_tables:
+      - parsed_mongodb
+    joins: []
+  dimensions:
+    - name: ns
+      type: LowCardinality(String)
+      cardinality_max: 10000
+    - name: event_type
+      type: LowCardinality(String)
+    - name: op
+      type: LowCardinality(String)
+  measures:
+    - name: c
+      expr: count()
+      additive: true
+      type: UInt64
+  filters:
+    include: []
+    exclude: []
+    canonicalize:
+      severity_map: {}
+  retention:
+    ttl_days: 365
+    partition_by: toDate(t_min)
+    order_by: [t_min, ns, event_type, op]
+  quality_checks:
+    require_non_empty: true
+    max_ns_cardinality: 10000
+  backfill:
+    allowed: true
+    method: truncate_then_insert
+  security:
+    pii: false
+  panels:
+    - title: Events per minute by ns
+      sql: |
+        SELECT t_min AS time, ns, sum(c) AS value
+        FROM fact_events_minute
+        WHERE t_min BETWEEN $__fromTime AND $__toTime
+        GROUP BY t_min, ns
+        ORDER BY t_min
+  ml_features:
+    - c
+  owners:
+    code: "@you"
+    review: "@teammate"
