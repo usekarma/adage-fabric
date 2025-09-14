@@ -32,24 +32,19 @@ DROP VIEW IF EXISTS mv_order_failures_minute_mongodb_cdc_to_all;
 DROP VIEW IF EXISTS mv_jira_start_hour_mongodb_cdc_to_all;
 
 --------------------------------------------
--- 1) Kafka source (top-level schema guard)
+-- 1) Kafka source (preserve full JSON line)
+--    Use JSONAsString so we keep the raw payload as 'value_json'.
 --------------------------------------------
 CREATE TABLE kafka_mongodb_cdc
 (
-  source      LowCardinality(String),
-  event_type  LowCardinality(String),
-  ns          LowCardinality(String),
-  event_id    String,
-  ts_event    String,                 -- parse later to DateTime64
-  op          LowCardinality(String),
-  severity    LowCardinality(String)
+  value_json String
 )
 ENGINE = Kafka
 SETTINGS
   kafka_broker_list   = 'redpanda:9092',
   kafka_topic_list    = 'adage.demo.mongodb.cdc.v1',
   kafka_group_name    = 'fabric_mongodb_cdc',
-  kafka_format        = 'JSONEachRow',
+  kafka_format        = 'JSONAsString',
   kafka_row_delimiter = '\n',
   kafka_num_consumers = 1;
 
@@ -70,7 +65,7 @@ PARTITION BY toDate(ingest_ts)
 ORDER BY (topic, partition_id, offset)
 TTL toDate(ingest_ts) + INTERVAL 3 DAY;
 
--- Kafka → RAW (preserve full JSON via _raw)
+-- Kafka → RAW (preserve full JSON via value_json column)
 CREATE MATERIALIZED VIEW mv_kafka_to_raw_mongodb_cdc
 TO raw_mongodb_cdc
 AS
@@ -79,7 +74,7 @@ SELECT
   _partition AS partition_id,
   _offset    AS offset,
   ifNull(_key,'') AS key,
-  _raw       AS value_json
+  value_json
 FROM kafka_mongodb_cdc;
 
 ----------------------------------
@@ -111,16 +106,15 @@ AS
 SELECT
   parseDateTime64BestEffort(JSONExtractString(value_json,'ts_event')) AS ts_event,
   now64(3) AS ts_ingest,
-  JSONExtractString(value_json,'source')       AS source,
-  JSONExtractString(value_json,'event_type')   AS event_type,
-  JSONExtractString(value_json,'ns')           AS ns,
-  JSONExtractString(value_json,'event_id')     AS event_id,
-  lower(coalesce(JSONExtractString(value_json,'severity'), '')) AS severity,
-  coalesce(JSONExtractString(value_json,'op'), '') AS op,
-  -- ▼ Customize these to your source schema
-  coalesce(JSONExtractString(value_json,'payload.status'), '')  AS status,
+  coalesce(JSONExtractString(value_json,'source'),'mongodb_cdc')     AS source,
+  coalesce(JSONExtractString(value_json,'event_type'),'')                   AS event_type,
+  coalesce(JSONExtractString(value_json,'ns'),'')                           AS ns,
+  coalesce(JSONExtractString(value_json,'event_id'), JSONExtractString(value_json,'_id'), toString(cityHash64(value_json))) AS event_id,
+  lower(coalesce(JSONExtractString(value_json,'severity'), ''))            AS severity,
+  lower(coalesce(JSONExtractString(value_json,'op'), ''))                  AS op,
+  coalesce(JSONExtractString(value_json,'payload.status'), '')             AS status,
   left(coalesce(JSONExtractString(value_json,'payload.message'), ''), 2000) AS message,
-  JSONExtractRaw(value_json,'payload') AS payload_json
+  coalesce(JSONExtractRaw(value_json,'payload'), value_json)               AS payload_json
 FROM raw_mongodb_cdc;
 
 -------------------------------
@@ -236,16 +230,3 @@ CREATE MATERIALIZED VIEW mv_latency_minute_mongodb_cdc_to_all
 TO fact_latency_minute_all AS
 SELECT t_min, ns, p50_ms, p95_ms, 'mongodb_cdc' AS lane
 FROM fact_latency_minute_mongodb_cdc;
-
--- Optional writers if you enabled the domain facts above
-/*
-CREATE MATERIALIZED VIEW mv_order_failures_minute_mongodb_cdc_to_all
-TO fact_order_failures_minute_all AS
-SELECT t_min, ns, c, 'mongodb_cdc' AS lane
-FROM fact_order_failures_minute_mongodb_cdc;
-
-CREATE MATERIALIZED VIEW mv_jira_start_hour_mongodb_cdc_to_all
-TO fact_jira_start_hour_all AS
-SELECT t_hour, ns, c, 'mongodb_cdc' AS lane
-FROM fact_jira_start_hour_mongodb_cdc;
-*/
