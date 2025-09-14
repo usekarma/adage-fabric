@@ -1,0 +1,326 @@
+{
+  "id": null,
+  "uid": "fabric-overview",
+  "title": "Fabric / Overview",
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "tags": [
+    "fabric",
+    "clickhouse"
+  ],
+  "editable": true,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Events per minute (by lane)",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "query": "\nSELECT\n  t_min AS time,\n  lane,\n  sum(c) AS c\nFROM fact_events_minute_all\nWHERE $__timeFilter(t_min)\nGROUP BY time, lane\nORDER BY time\n",
+          "format": "time_series"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Events per minute (by event_type)",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "query": "\nSELECT\n  t_min AS time,\n  event_type,\n  sum(c) AS c\nFROM fact_events_minute_all\nWHERE $__timeFilter(t_min)\nGROUP BY time, event_type\nORDER BY time\n",
+          "format": "time_series"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Events last 1h",
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 0,
+        "y": 16
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse"
+      },
+      "targets": [
+        {
+          "query": "\nSELECT\n  sum(c) AS events_last_hour\nFROM fact_events_minute_all\nWHERE t_min >= now() - INTERVAL 1 HOUR\n",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Ingest latency (p50/p95 ms)",
+      "gridPos": {
+        "h": 8,
+        "w": 16,
+        "x": 8,
+        "y": 16
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "query": "\nSELECT\n  t_min AS time,\n  'p50' AS series,\n  p50_ms AS value\nFROM fact_latency_minute_all\nWHERE $__timeFilter(t_min)\nUNION ALL\nSELECT\n  t_min AS time,\n  'p95' AS series,\n  p95_ms AS value\nFROM fact_latency_minute_all\nWHERE $__timeFilter(t_min)\nORDER BY time\n",
+          "format": "time_series"
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Recent parsed events",
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "targets": [
+        {
+          "query": "\n/* Use parsed_all if available; fallback to a lane table by editing this query */\nSELECT\n  ts_ingest AS time,\n  ns,\n  event_type,\n  op,\n  severity,\n  status,\n  left(message, 200) AS message\nFROM parsed_all\nWHERE ts_ingest >= now() - INTERVAL 1 HOUR\nORDER BY ts_ingest DESC\nLIMIT 200\n",
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "type": "barchart",
+      "title": "Op mix by namespace",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 36
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse"
+      },
+      "targets": [
+        {
+          "query": "\nSELECT ns, op, count(*) AS c\nFROM parsed_all\nWHERE $__timeFilter(ts_ingest)\nGROUP BY ns, op\nORDER BY c DESC\n",
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Lag (avg ms)",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 36
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "query": "\nSELECT\n  toStartOfMinute(ts_ingest) AS time,\n  avg(dateDiff('millisecond', ts_event, ts_ingest)) AS avg_ms\nFROM parsed_all\nWHERE $__timeFilter(ts_ingest)\nGROUP BY time\nORDER BY time\n",
+          "format": "time_series"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Events per minute by namespace",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 44
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse"
+      },
+      "targets": [
+        {
+          "query": "\nSELECT t_min AS time, ns, sum(c) AS c\nFROM fact_events_minute_all\nWHERE $__timeFilter(t_min)\nGROUP BY time, ns\nORDER BY time\n",
+          "format": "time_series"
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Recent alerts",
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 52
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse"
+      },
+      "targets": [
+        {
+          "query": "\nSELECT ts_ingest, source, ns, severity, status, message\nFROM parsed_all\nWHERE $__timeFilter(ts_ingest)\n  AND lower(severity) IN ('warn','error')\nORDER BY ts_ingest DESC\nLIMIT 500\n",
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Latency trend (p95)",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 62
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "query": "\nSELECT t_min AS time, ns, p95_ms AS value\nFROM fact_latency_minute_all\nWHERE $__timeFilter(t_min)\nORDER BY time\n",
+          "format": "time_series"
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Top noisy namespaces (last 24h)",
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 70
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse"
+      },
+      "targets": [
+        {
+          "query": "\nSELECT ns, sum(c) AS events_24h\nFROM fact_events_minute_all\nWHERE t_min >= now() - INTERVAL 24 HOUR\nGROUP BY ns\nORDER BY events_24h DESC\nLIMIT 10\n",
+          "format": "table"
+        }
+      ]
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "type": "query",
+        "name": "lane",
+        "label": "Lane",
+        "datasource": {
+          "type": "grafana-clickhouse-datasource",
+          "uid": "clickhouse"
+        },
+        "query": "SELECT DISTINCT lane FROM fact_events_minute_all ORDER BY lane",
+        "refresh": 1,
+        "hide": 0,
+        "includeAll": true
+      }
+    ]
+  },
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "type": "dashboard",
+        "name": "Annotations & Alerts"
+      }
+    ]
+  }
+}
