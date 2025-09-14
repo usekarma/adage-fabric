@@ -1,16 +1,7 @@
-version: "3.8"
-
 services:
   redpanda:
-    image: docker.redpanda.com/redpandadata/redpanda:v24.1.10
-    command:
-      - redpanda start
-      - --overprovisioned
-      - --smp=1
-      - --memory=1G
-      - --reserve-memory=0M
-      - --set redpanda.enable_rack_awareness=false
-      - --check=false
+    image: redpandadata/redpanda:v24.1.10   # ✅ public Docker Hub image
+    command: [ "redpanda", "start", "--overprovisioned", "--smp=1", "--memory=1G", "--reserve-memory=0M", "--set", "redpanda.enable_rack_awareness=false", "--check=false" ]
     ports:
       - "9092:9092"   # Kafka API
       - "9644:9644"   # Admin API

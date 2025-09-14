@@ -125,6 +125,19 @@ adage-fabric/
 - Parametrize the topic per case (adage.demo.${CASE}.v1) to avoid consumer-offset interference (or run ALTER TABLE kafka_mongodb_cdc MODIFY SETTING kafka_group_name='fabric_demo_$$RANDOM' before each case).
 - If you later add async enrichment, add expected CSVs for the enriched view too.
 
+## 🚧 Suggestions to Polish / Demo Improvements
+
+Here are a few things that would make Fabric easier for others to demo and adopt quickly:
+
+| Area | Suggestion |
+|---|---|
+| **Bootstrap SQL** | Ensure `sql/00_init.sql` (or equivalent) defines all raw/parsed/facts/views tables, so a fresh clone + `docker compose up` immediately yields queryable data. Include Kafka engine source table if applicable. |
+| **Examples** | Add more fixture cases: e.g., delete events, late arrivals, out‑of‑order timestamps — to stress parsing logic in obvious ways. |
+| **Dashboard Defaults** | Ship Grafana dashboards that display something out‑of‑the‑box (e.g., events per minute from facts). Provide a sample fixture so panels aren’t blank on first run. |
+| **Makefile / Scripts** | Add helper commands like `make up`, `make init`, `make test` to tie Docker + SQL + tests together. |
+| **Version Tagging / Releases** | Tag `v0.1` when reaching a minimum usable demo state. Makes it clear this is the “first shareable version.” |
+| **Readme Front Matter** | Add a screenshot (Grafana panel) once populated. Consider an FAQ section clarifying *what Fabric is* vs *what it isn’t* (research vs demo). |
+
 ## License
 
 Apache 2.0 — free to use, adapt, and extend.  
