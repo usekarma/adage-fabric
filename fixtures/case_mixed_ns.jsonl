@@ -1,0 +1,3 @@
+{"ts_event":"2025-09-14T12:00:00.000Z","source":"mongodb_cdc","event_type":"order","ns":"orders","event_id":"o-7001","severity":"info","op":"c","payload":{"status":"created","message":"order create"}}
+{"ts_event":"2025-09-14T12:01:00.000Z","source":"mongodb_cdc","event_type":"ticket_transition","ns":"jira","event_id":"T-11","severity":"info","op":"u","payload":{"status":"in progress","message":"developer started"}}
+{"ts_event":"2025-09-14T12:02:00.000Z","source":"mongodb_cdc","event_type":"alert","ns":"splunk","event_id":"A-77","severity":"error","op":"u","payload":{"status":"firing","message":"CPU 95%"}}

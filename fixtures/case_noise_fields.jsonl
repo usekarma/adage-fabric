@@ -1,0 +1,2 @@
+{"ts_event":"2025-09-14T12:00:00.000Z","source":"mongodb_cdc","event_type":"order","ns":"orders","event_id":"o-6001","severity":"info","op":"c","payload":{"status":"created","message":"has extras","extra_1":123,"extra_2":{"a":1}}}
+{"ts_event":"2025-09-14T12:01:00.000Z","source":"mongodb_cdc","event_type":"order","ns":"orders","event_id":"o-6001","severity":"info","op":"u","payload":{"status":"confirmed","message":"still ok","note":"ignore me"}}

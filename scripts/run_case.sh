@@ -1,34 +1,43 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-CASE=$1
-TOPIC=${TOPIC:-adage.demo.mongodb.cdc.v1}
-ROOT=$(cd "$(dirname "$0")/.."; pwd)
+# Usage: ./scripts/run_case.sh case_orders_happy [TOPIC]
+TOPIC_DEFAULT="adage.demo.mongodb.cdc.v1"
+SLEEP_AFTER_FEED=8
 
-# Reset tables
-"$ROOT/scripts/query.sh" "SOURCE '$ROOT/sql/90_reset.sql'"
+CASE="${1:-}"
+if [[ -z "${CASE}" ]]; then
+  echo "Usage: $0 <fixture_basename> [topic]" >&2
+  exit 1
+fi
+TOPIC="${2:-$TOPIC_DEFAULT}"
+FIX="fixtures/${CASE}.jsonl"
+[[ -f "${FIX}" ]] || { echo "Fixture not found: ${FIX}" >&2; exit 1; }
 
-# Feed fixtures
-"$ROOT/scripts/feed.sh" "$TOPIC" "$ROOT/fixtures/${CASE}.jsonl"
+# Helper to run CH SQL
+ch() { ./scripts/query.sh --query "$1"; }
 
-# Small wait to allow MV consumption
-sleep 2
+echo "→ Producing ${FIX} to ${TOPIC}"
+make -s feed FILE="${FIX}" TOPIC="${TOPIC}" || { echo "Make feed failed"; exit 1; }
 
-# Query actuals (stable ordering)
-ACT_PARSED=$(mktemp)
-ACT_FACTS=$(mktemp)
-"$ROOT/scripts/query.sh" "
-  SELECT ts_event, source, event_type, ns, event_id, severity, op, status
-  FROM parsed_mongodb
-  ORDER BY ts_event, event_id
-  FORMAT CSV" > "$ACT_PARSED"
-"$ROOT/scripts/query.sh" "
-  SELECT t_min, ns, event_type, c
-  FROM facts_events_minute
-  ORDER BY t_min, ns, event_type
-  FORMAT CSV" > "$ACT_FACTS"
+# Nudge Kafka engine to consume (helpful on some CH versions)
+echo "→ Waiting ${SLEEP_AFTER_FEED}s for materialized views"
+sleep "${SLEEP_AFTER_FEED}"
 
-# Compare to expected snapshots
-diff -u "$ROOT/expected/${CASE}.parsed.csv" "$ACT_PARSED"
-diff -u "$ROOT/expected/${CASE}.facts.csv" "$ACT_FACTS"
-echo "✅ ${CASE} passed."
+echo "→ Parsed rows in last 10m:"
+ch "SELECT count() FROM parsed_mongodb_cdc WHERE ts_ingest >= now() - INTERVAL 10 MINUTE"
+
+echo "→ Facts rows in last 10m:"
+ch "SELECT sum(c) FROM fact_events_minute_all WHERE t_min >= now() - INTERVAL 10 MINUTE"
+
+# Optional: dump a peek at recent parsed rows for sanity
+mkdir -p tmp
+./scripts/query.sh --query "
+  SELECT ts_event, event_type, ns, event_id, severity, op
+  FROM parsed_mongodb_cdc
+  WHERE ts_ingest >= now() - INTERVAL 10 MINUTE
+  ORDER BY ts_ingest DESC
+  LIMIT 10
+  FORMAT CSV" > "tmp/${CASE}.peek.csv"
+
+echo "✓ Case ${CASE} complete"

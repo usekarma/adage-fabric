@@ -1,3 +1,8 @@
 case_orders_happy
 case_orders_retry
 case_orders_delete
+case_out_of_order
+case_late_arrival
+case_noise_fields
+case_mixed_ns
+case_high_latency

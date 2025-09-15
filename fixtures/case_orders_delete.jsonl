@@ -1,0 +1,2 @@
+{"ts_event":"2025-09-14T12:00:00.000Z","source":"mongodb_cdc","event_type":"order","ns":"orders","event_id":"o-3001","severity":"info","op":"c","payload":{"status":"created","message":"order created"}}
+{"ts_event":"2025-09-14T12:05:00.000Z","source":"mongodb_cdc","event_type":"order","ns":"orders","event_id":"o-3001","severity":"info","op":"d","payload":{"status":"deleted","message":"user canceled"}}

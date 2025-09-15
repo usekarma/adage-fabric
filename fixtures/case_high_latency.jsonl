@@ -1,0 +1,2 @@
+{"ts_event":"2025-09-14T11:30:00.000Z","source":"mongodb_cdc","event_type":"order","ns":"orders","event_id":"o-8001","severity":"info","op":"c","payload":{"status":"created","message":"delayed ingest"}}
+{"ts_event":"2025-09-14T11:35:00.000Z","source":"mongodb_cdc","event_type":"order","ns":"orders","event_id":"o-8001","severity":"info","op":"u","payload":{"status":"confirmed","message":"delayed confirm"}}
