@@ -1,0 +1,17 @@
+{
+  "name": "mongodb-cdc",
+  "config": {
+    "connector.class": "io.debezium.connector.mongodb.MongoDbConnector",
+    "tasks.max": "1",
+    "mongodb.connection.string": "mongodb://mongodb:27017/?replicaSet=rs0",
+    "topic.prefix": "adage.demo.mongodb",
+    "collection.include.list": "demo.orders",
+    "mongodb.members.auto.discover": "false",
+    "mongodb.user": "",
+    "mongodb.password": "",
+    "tombstones.on.delete": "false",
+    "publish.full.document.only": "true",
+    "capture.mode.name": "oplog",
+    "heartbeat.interval.ms": "10000"
+  }
+}
